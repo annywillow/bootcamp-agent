@@ -1,4 +1,4 @@
-"""Create a simple Foundry agent (knowledge in instructions + Web Search) and chat with it."""
+"""Create a simple Foundry agent (knowledge in instructions + Web Search)."""
 import os
 from dotenv import load_dotenv
 from azure.identity import DefaultAzureCredential

@@ -2,75 +2,71 @@
 
 ## Microsoft Foundry Overview and Single Agent Deployment
 
-A hands-on lab for the **MMAUG 30-Day AI and DevOps Fundamentals Bootcamp**, organised by the Malta Microsoft AI User Group. Build a single AI agent in Microsoft Foundry that helps learners understand the bootcamp curriculum and programme information.
+A hands-on lab for the **MMAUG 30-Day AI and DevOps Fundamentals Bootcamp**, organised by the Malta Microsoft AI User Group. Build a single prompt agent in Microsoft Foundry, configure its behaviour, and chat with it from Python or the portal.
 
-The assistant uses a small knowledge snapshot embedded in its instructions and **Web Search** for information the snapshot cannot confirm. Its instructions require it to identify its sources and acknowledge missing information rather than invent an answer.
+The assistant uses a small bootcamp knowledge snapshot embedded in its instructions and **Web Search** for details the snapshot cannot confirm. Its source rules tell it to acknowledge missing information rather than invent sessions, speakers, times or links.
 
 **Level:** Beginner  
-**Estimated time:** 30–45 minutes once Azure resources and software are ready  
+**Estimated time:** 30–45 minutes once software and Azure resources are ready  
 **Language:** Python  
-**Agent name:** `mmaug-bootcamp-assistant`
+**Example agent name:** `mmaug-bootcamp-agent`  
+**Example model deployment:** `gpt-4.1` with **Global Standard** deployment
 
 ## Learning objectives
 
 By the end of this lab, you will be able to:
 
-1. Explain how Foundry resources, projects, model deployments, agents, and tools fit together.
-2. Configure a Python development environment in VS Code.
-3. Authenticate to Azure using Microsoft Entra ID without embedding API keys in code.
-4. Write agent instructions that define its role, knowledge sources, and limits.
-5. Add Web Search to look up information missing from a local knowledge snapshot.
-6. Create a versioned prompt agent with the Foundry SDK and test it in the portal.
-7. Evaluate answers for correctness, source use, and handling of unknown information.
-8. Remove lab resources and review cloud costs.
+1. Explain the roles of a Foundry resource, project, model deployment, prompt agent and tool.
+2. Set up a Python virtual environment in VS Code.
+3. Authenticate to Azure using Microsoft Entra ID and `DefaultAzureCredential`.
+4. Define agent instructions using a small programme knowledge snapshot.
+5. Configure Web Search for missing or current information.
+6. Create an agent version with `agent.py` and inspect it in Foundry.
+7. Use `chat.py` to ask questions and follow-ups in one conversation.
+8. Evaluate source use, accuracy and handling of unknown information.
+9. Clean up lab resources and understand which actions incur charges.
 
-## Microsoft Foundry overview
+## How the lab works
 
-Microsoft Foundry supports building, testing, deploying, and managing AI applications and agents. This lab uses the following components:
+| Component | Purpose |
+| --- | --- |
+| Foundry resource | Azure resource providing access to Foundry services. |
+| Project | Workspace containing the agent and its configuration. |
+| Model deployment | Deployed model used to generate responses. |
+| Prompt agent | Saved, versioned definition containing the model, instructions and tools. |
+| Web Search | Looks up information on the public web when the model calls the tool. |
+| Conversation | Holds the context used for follow-up questions. |
 
-| Component | Purpose in this lab |
-|---|---|
-| Foundry resource | Azure resource that provides access to Foundry services. |
-| Project | Workspace where you configure and manage the agent. |
-| Model deployment | Deployed model used by the agent; the example deployment name is `gpt-4.1`. |
-| Prompt agent | Saved definition combining a model, instructions, and tools. |
-| Web Search | Tool for looking up missing or current programme information. |
+There are **two separate Python scripts**:
 
-A **single agent** handles each request using its own instructions and tools. A multi-agent solution divides work among several agents.
+- **`agent.py`** reads `data/Knowledge_txt.txt`, adds the text to the instructions, configures `WebSearchTool()`, creates an agent version and prints its name and version. It then exits.
+- **`chat.py`** connects to the existing named agent, creates a conversation, and runs an interactive question-and-answer loop. It does not create another agent version.
 
-A direct model request supplies configuration for that interaction. A saved agent provides a reusable, versioned definition. Conversation history is a separate concern: saving an agent alone does not give it memory of every previous chat.
+The knowledge file is embedded in the agent's saved instructions. It is not uploaded to File Search, and this lab does not create a vector database. `chat.py` therefore does not need to read the knowledge file again.
 
-### How the assistant answers
-
-1. A learner asks a question in the Python chat or portal playground.
-2. The agent is instructed to use the supplied knowledge snapshot for captured programme facts.
-3. For missing or potentially changed details, it searches the web and cites the relevant source, prioritising official programme pages.
-4. If no reliable answer is available, it explains the gap and points to the programme website.
-
-These are intended behaviours to verify during testing. This lab embeds a small file in the instructions; it does not implement File Search or a vector database.
+The instructions prioritise the snapshot for programme facts and request web search for details such as daily session titles, speakers, times and links. These are intended behaviours to check during testing: enabling a tool does not force the agent to use it for every question.
 
 ## Prerequisites
 
-### Azure
+### Azure access
 
 - An Azure subscription and access to a Microsoft Foundry resource and project.
-- A deployed model that supports the agent and Web Search in your selected region. This lab uses `gpt-4.1` as the example deployment name; use your actual deployment name in configuration.
-- Permission to create and use agents. Microsoft now calls the relevant developer role **Foundry User**, previously **Azure AI User**. For project-scoped development, follow the documented role assignments, including resource read access where required.
-- Access to Web Search under your organisation's Azure policies.
+- A deployed model supported by the prompt-agent and Web Search features in your chosen region. This lab uses GPT-4.1.
+- Permission to create and run agents, such as the **Foundry User** role on the project, with any required resource access. Some interfaces still show the previous name, **Azure AI User**. See [Foundry role assignments](https://learn.microsoft.com/en-us/azure/foundry/concepts/rbac-foundry).
+- Web Search permitted by your organisation's policies.
 
-Creating resources, deploying models, and assigning roles may require additional permissions. Ask your Azure administrator if those actions are unavailable.
+Creating resources, model deployments or role assignments can require additional permissions. Use a dedicated lab project where possible.
 
 ### Local software
 
-- [Python 3.10 or later](https://www.python.org/downloads/).
+- [Python 3.10 or later](https://www.python.org/downloads/) — the working Windows environment for this lab used Python 3.13.9.
+- [VS Code](https://code.visualstudio.com/) with the Python extension. The Python Environments extension helps select and activate the virtual environment.
 - [Git](https://git-scm.com/downloads).
 - [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli).
-- [VS Code](https://code.visualstudio.com/) with the Python extension. The Azure Resources extension is optional.
-- A GitHub account if you want to fork or publish your work.
 
-Check your installations:
+Check your installations in a terminal:
 
-```bash
+```powershell
 python --version
 git --version
 az version
@@ -78,83 +74,101 @@ az version
 
 On macOS/Linux, use `python3` if `python` is unavailable.
 
-**Costs:** Model inference and Web Search can incur charges. Other Azure resources and deployment types may also incur costs. Review pricing and set a budget alert before the lab. Budget alerts notify you; they do not automatically stop spending.
+**Costs:** Asking the assistant questions consumes model tokens, and Web Search calls can incur separate charges. Review the [cleanup and costs](#cleanup-and-costs) section before starting.
 
-## Repository files
-
-The lab expects these files to be included in the repository:
+## Files and learner templates
 
 | File | Purpose |
-|---|---|
-| [agent_foundry.py](agent_foundry.py) | Creates an agent version, loads the knowledge file, configures Web Search, and starts the Python chat. |
-| [cleanup.py](cleanup.py) | Removes the lab agent using the configured project and agent name. |
-| [data/Knowledge_txt.txt](data/Knowledge_txt.txt) | Public bootcamp knowledge snapshot dated 29 September 2026. |
-| [requirements.txt](requirements.txt) | Python dependencies for the supplied scripts. |
-| [.env.example](.env.example) | Configuration template containing placeholders. |
-| [.gitignore](.gitignore) | Excludes local configuration and generated files from Git. |
-| [LICENSE](LICENSE) | Repository licence. |
-| [README.md](README.md) | Lab guide and learning objectives. |
+| --- | --- |
+| [agent.py](agent.py) | Creates or updates the saved agent by creating a version. |
+| [chat.py](chat.py) | Chats with the existing agent using a conversation. |
+| [data/Knowledge_txt.txt](data/Knowledge_txt.txt) | Small programme knowledge snapshot dated 29 September 2026. |
+| [README.md](README.md) | Lab instructions and learning objectives. |
+| [.gitignore](.gitignore) | Excludes local environment settings, the virtual environment and generated files. |
+| `requirements.txt` | Dependency file; a starting template is provided in step 4 if absent. |
+| `.env.example` | Configuration template; create it using step 6 if absent. |
+| `.env` | Your local configuration, created from the template and excluded from Git. |
 
-Create `.env` locally from `.env.example`; do not commit it. If a required script or knowledge file is missing, obtain it from the lab organiser before continuing. The templates below describe configuration; they do not replace the Python scripts.
+Keep `agent.py` and `chat.py` as separate files. Run all lab commands from the repository root so the relative knowledge-file path resolves correctly.
 
 ## Step-by-step lab
 
-### 1. Prepare your Foundry project
+### 1. Prepare Foundry
 
 1. Sign in to the [Foundry portal](https://ai.azure.com/).
-2. Select the subscription, resource, and project supplied for the lab, or create dedicated lab resources if authorised.
-3. Open the model deployment area and confirm that a suitable model is deployed. Record its **deployment name**.
-4. Copy the **project endpoint** from the project's overview or welcome page.
-5. Confirm your access permissions and that Web Search is available for your project and model.
+2. Select your subscription, Foundry resource and project.
+3. Open the model deployment area. Deploy GPT-4.1 or confirm an existing suitable deployment is available.
+4. For this example, use **Global Standard** and record the exact **deployment name**. It may differ from the model's product name.
+5. Copy the **project endpoint** from the project's overview or welcome page.
+6. Confirm your project access and Web Search availability.
 
-Portal labels can vary between the current and classic experiences. This lab uses the current, versioned prompt-agent approach with Azure AI Projects **2.x**; avoid mixing it with classic 1.x examples.
+The endpoint should have this format:
+
+```text
+https://YOUR-RESOURCE.services.ai.azure.com/api/projects/YOUR-PROJECT
+```
+
+This lab uses the versioned prompt-agent approach with **Azure AI Projects 2.x**. Do not mix it with classic 1.x agent examples. Portal labels can vary between experiences.
 
 ### 2. Clone and open the repository
 
-Replace the placeholder URL with the lab repository URL or your fork:
-
-```bash
-git clone https://github.com/<your-username>/bootcamp-agent.git
+```powershell
+git clone https://github.com/annywillow/bootcamp-agent.git
 cd bootcamp-agent
 code .
 ```
 
-Run the following commands from the repository root, where `agent_foundry.py` and `requirements.txt` are located.
+If using a fork, substitute its URL. If the folder is already on your computer, open it in VS Code instead of cloning again.
 
-### 3. Create and activate a virtual environment
+### 3. Create and activate `myenv`
 
 **Windows PowerShell:**
 
 ```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
+python -m venv myenv
+.\myenv\Scripts\Activate.ps1
 ```
 
-If local policy blocks activation, use the environment's interpreter directly for subsequent Python commands:
+Skip creation if `myenv` already exists. After activation, the prompt usually starts with `(myenv)`.
+
+If PowerShell blocks activation on your personal computer, this user-scoped setting persists across sessions:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-.\.venv\Scripts\python.exe agent_foundry.py
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+.\myenv\Scripts\Activate.ps1
 ```
+
+Organisation policies can override this setting. If activation remains blocked, use the virtual environment's Python directly:
+
+```powershell
+.\myenv\Scripts\python.exe -m pip --version
+```
+
+For subsequent commands, replace `python` with `.\myenv\Scripts\python.exe` until activation works.
 
 **macOS/Linux:**
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
+python3 -m venv myenv
+source myenv/bin/activate
 ```
 
-In VS Code, select **Python: Select Interpreter** from the Command Palette and choose the interpreter in `.venv`.
+**Configure VS Code:**
+
+1. Press **Ctrl+Shift+P** and select **Python: Select Interpreter**.
+2. Choose `myenv`. If missing, enter the path to `myenv/Scripts/python.exe` on Windows or `myenv/bin/python` on macOS/Linux.
+3. Close the old terminal and open a new one. With automatic activation enabled, VS Code activates the selected environment.
+4. Check the interpreter:
+
+```powershell
+python -c "import sys; print(sys.executable)"
+```
+
+On Windows, the result should end in `myenv\Scripts\python.exe`. If it points to Anaconda or another installation, switch environments before installing packages or running scripts. You can also use **Environment Managers → myenv → Open in Terminal**.
 
 ### 4. Install dependencies
 
-With the virtual environment active:
-
-```bash
-python -m pip install -r requirements.txt
-```
-
-The scripts require packages for Foundry project access, Azure identity, and loading `.env`. A starting template for `requirements.txt` is:
+If `requirements.txt` is absent, create it with this starting template:
 
 ```text
 azure-ai-projects>=2.3.0,<3.0.0
@@ -162,23 +176,48 @@ azure-identity
 python-dotenv
 ```
 
-Use the repository's tested dependency versions when provided. The range above follows the current Microsoft prompt-agent quickstart; it is not a guarantee that every future release is compatible with the lab scripts.
+With `myenv` active, run:
 
-### 5. Authenticate to Azure
+```powershell
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
 
-```bash
+`azure-ai-projects` supplies the project SDK and its OpenAI client dependency. `azure-identity` supplies authentication. The package for `from dotenv import load_dotenv` is **`python-dotenv`**; do not try to install a package named `python`.
+
+The template follows the SDK generation used by the lab. Use pinned versions from a validated lab release when available, and retest the scripts after upgrading dependencies.
+
+### 5. Sign in to Azure
+
+```powershell
 az login
 ```
 
-If you have multiple subscriptions, select the one used for the lab:
+Complete the browser/account sign-in and any multi-factor authentication, then select the subscription that contains your project. To select it explicitly:
 
-```bash
-az account set --subscription "<your-subscription-id>"
+```powershell
+az account set --subscription "YOUR-SUBSCRIPTION-ID"
 ```
 
-The scripts use `DefaultAzureCredential`, which can use your Azure CLI sign-in. Your signed-in identity must also have permission to access the Foundry project.
+If sign-in fails for the wrong tenant or requires a fresh interactive login:
 
-### 6. Configure the environment
+```powershell
+az login --tenant "YOUR-TENANT-ID" --use-device-code
+```
+
+Follow the displayed browser instructions and complete MFA. `DefaultAzureCredential` can use this Azure CLI sign-in, but your identity must still have project permissions.
+
+### 6. Configure `.env`
+
+If `.env.example` is absent, create it with these placeholders:
+
+```dotenv
+AZURE_AI_FOUNDRY_PROJECT_ENDPOINT=https://YOUR-RESOURCE.services.ai.azure.com/api/projects/YOUR-PROJECT
+AZURE_AI_FOUNDRY_MODEL_DEPLOYMENT_NAME=YOUR-DEPLOYMENT-NAME
+AZURE_AI_FOUNDRY_AGENT_NAME=mmaug-bootcamp-agent
+```
+
+Copy the template locally:
 
 **Windows PowerShell:**
 
@@ -192,208 +231,241 @@ Copy-Item .env.example .env
 cp .env.example .env
 ```
 
-Edit `.env` using this template:
+Replace the endpoint and deployment placeholders in `.env`, then save it. For a deployment actually named `gpt-4.1`, set:
 
-```env
-PROJECT_ENDPOINT=https://<your-resource>.services.ai.azure.com/api/projects/<your-project>
-MODEL_DEPLOYMENT=gpt-4.1
-AGENT_NAME=mmaug-bootcamp-assistant
+```dotenv
+AZURE_AI_FOUNDRY_MODEL_DEPLOYMENT_NAME=gpt-4.1
 ```
 
-- Replace the endpoint with the project endpoint you copied from Foundry.
-- Set `MODEL_DEPLOYMENT` to the exact deployment name, which may differ from the model's product name.
-- Use the same `AGENT_NAME` when running the agent and cleanup scripts.
-- These variable names belong to this lab; Microsoft samples may use different names.
+| Variable | Used by |
+| --- | --- |
+| `AZURE_AI_FOUNDRY_PROJECT_ENDPOINT` | Both scripts to connect to the project. |
+| `AZURE_AI_FOUNDRY_MODEL_DEPLOYMENT_NAME` | `agent.py` to configure the agent's model deployment. |
+| `AZURE_AI_FOUNDRY_AGENT_NAME` | Both scripts to identify the same agent. |
 
-Ensure `.gitignore` contains:
+Agent names must start and end with an alphanumeric character, may contain hyphens in the middle, and must not exceed 63 characters. Use `mmaug-bootcamp-agent`, without spaces or underscores.
+
+Both scripts call `load_dotenv()`. VS Code terminal injection through `python.terminal.useEnvFile` is not required for these scripts. The keys must match the code exactly; the older names `PROJECT_ENDPOINT`, `MODEL_DEPLOYMENT` and `AGENT_NAME` will not satisfy it.
+
+Keep your existing `.gitignore`, ensuring these entries are present:
 
 ```gitignore
 .env
+myenv/
 .venv/
 __pycache__/
 *.pyc
 ```
 
-Keep `.env.example` in Git with placeholders only.
+Commit `.env.example` with placeholders. Keep your actual `.env` local.
 
-### 7. Review the knowledge and agent instructions
+### 7. Review the knowledge and instructions
 
-Open `data/Knowledge_txt.txt` and review its source URL, capture date, programme facts, and missing information.
+Open `data/Knowledge_txt.txt`. Check its source URL, capture date and programme facts.
 
-Then open `agent_foundry.py` and identify:
+Then review `agent.py`:
 
-- `AIProjectClient`: connects to the Foundry project.
-- `DefaultAzureCredential`: handles authentication.
-- The knowledge-loading code and `INSTRUCTIONS`: define the assistant's role and source rules.
-- `PromptAgentDefinition` and `WebSearchTool`: configure the prompt agent and tool.
-- The agent creation and response-generation code.
+- `AIProjectClient` connects to the project.
+- `DefaultAzureCredential` provides authentication.
+- `KNOWLEDGE` contains the file's text.
+- `INSTRUCTIONS` defines the assistant's role, source rules and boundaries.
+- `PromptAgentDefinition` combines the deployed model, instructions and `WebSearchTool()`.
+- `project.agents.create_version(...)` saves an agent version.
 
-An example instruction template is:
+The current source rules prioritise the snapshot, require web search for daily details, prohibit invented answers, and distinguish the certificate-review deadline from a guarantee of certification.
+
+The supplied clients include `allow_preview=True`. Retain it for the named-agent `get_openai_client(agent_name=...)` route used in `chat.py`.
+
+### 8. Create the agent
+
+```powershell
+python agent.py
+```
+
+Expected output resembles:
 
 ```text
-You are the MMAUG Bootcamp Assistant. Help beginners understand the
-MMAUG 30-Day AI and DevOps Fundamentals Bootcamp.
-
-Use the supplied knowledge snapshot for facts it contains. For missing
-or potentially changed details, search the web, prioritise official
-MMAUG sources, and cite the relevant URL. Make clear when an answer
-comes from the snapshot or a current web source.
-
-If sources conflict, explain the conflict and prefer current official
-information for schedules and deadlines. If information cannot be
-confirmed, say so. Do not invent speakers, meeting links, recordings,
-certificate rules, or private group invitations.
+Created agent version: mmaug-bootcamp-agent v1
 ```
 
-### 8. Create the agent and chat
+The version number can differ. The script finishes and returns to the shell; this is expected. It does not ask for a question.
 
-```bash
-python agent_foundry.py
+Run `agent.py` when initially creating the agent or after changing the knowledge file, instructions, tools or configured model. Rerunning it creates an agent version; ordinary chat does not require it. Changing the local knowledge file or model setting alone does not update the saved agent until you rerun this script.
+
+### 9. Start the chat
+
+```powershell
+python chat.py
 ```
 
-With the supplied version-creation script, a run creates a new version of the named agent and opens a chat loop. Record the displayed agent name and version. Ask a curriculum question, then a question requiring current information.
+You should see:
 
-Creating an agent version saves its configuration in Foundry. This lab does not deploy a separate public website or client application.
+```text
+Bootcamp assistant ready.
 
-### 9. Inspect and test in the portal
+Ask the bootcamp assistant (or 'quit'):
+```
 
-1. Open your project in the Foundry portal.
-2. Open **Agents** and select `mmaug-bootcamp-assistant` and the version created by the script.
-3. Review the model, instructions, and Web Search configuration.
-4. Open the agent playground and run the questions below.
-5. Inspect available tool-call details and source citations. A claim that the agent searched is not enough: check evidence of a search call.
+Enter a question at that prompt, for example:
 
-Suggested agent description:
+```text
+What will I learn in Week 2?
+```
 
-> Answers beginner questions about the MMAUG 30-Day AI and DevOps Fundamentals Bootcamp using a programme knowledge snapshot and Web Search for missing or current details.
+Ask a follow-up in the same session:
+
+```text
+Explain the first topic in simpler terms.
+```
+
+The chat creates one conversation before the loop and sends its ID with every question:
+
+```python
+conversation = openai_client.conversations.create()
+
+response = openai_client.responses.create(
+    conversation=conversation.id,
+    input=question,
+)
+```
+
+This provides context for follow-ups during that run. Restarting `chat.py` creates a new conversation. The script does not save an ID for resuming an earlier chat.
+
+Type `quit` or `exit` to leave the loop. Enter it without surrounding spaces; the supplied code uses `question.lower()` without `.strip()`. After returning to the `PS ...>` shell prompt, run `python chat.py` again before asking more questions. A question entered directly at the shell prompt is treated as a command.
+
+### 10. Inspect the agent in Foundry
+
+1. Open the same Foundry project and select **Agents**.
+2. Select the name configured in `.env` and inspect the version created by `agent.py`.
+3. Check the model deployment, saved instructions and Web Search tool.
+4. Test questions in the playground.
+5. Inspect available tool-call details and citations for web questions. A response saying it searched is not sufficient evidence that a search occurred.
+
+The current terminal client prints `response.output_text`; it does not separately print structured tool-call or citation metadata. Use the portal's available diagnostics when checking those details.
 
 ## Test questions and success criteria
 
-Check factual answers against the actual knowledge file and any cited official page. The examples below reflect the supplied lab description; update them if programme information changes.
+Compare answers with your actual knowledge file and any cited official sources. Do not grade an answer against a guessed programme schedule.
 
-| Question | Intended source | Success criterion |
-|---|---|---|
-| What will I learn in Week 3? | Snapshot | Covers the topics recorded in the knowledge file, including Azure, testing, DevOps, DevSecOps, AIOps, and GitHub Actions. |
-| How much time do I need each day? | Snapshot | Reports the captured estimate of 60–120 minutes. |
-| When is the capstone deadline? | Snapshot; web if checking changes | Reports the captured deadline of 14 November 2026 at 23:59 Malta time, unless a current official source confirms a change. |
-| Does submitting guarantee a certificate? | Snapshot | Explains that submission is for certificate review and does not guarantee a certificate. |
-| Can I still register? | Snapshot plus current official information | Explains the captured closure date of 14 September 2026 and distinguishes any verified later update. |
-| Who is speaking on 12 October 2026? | Web Search | Cites confirmed official information or says the detail could not be confirmed. |
-| What is the WhatsApp group link? | Unknown unless officially published | Does not invent or expose a private invitation; acknowledges unavailable information. |
+| Question | What to check |
+| --- | --- |
+| What will I learn in Week 1? | Matches the topics recorded in the snapshot. |
+| What will I learn in Week 3? | Covers the snapshot's Week 3 topics without inventing sessions. |
+| Explain the first topic more simply. | Uses the previous answer's context within the same chat session. |
+| How much time should I spend each day? | Reports the estimate in the knowledge file or acknowledges that it is missing. |
+| Does submitting the capstone guarantee a certificate? | Explains that submission is for review; does not invent eligibility rules. |
+| Search the web for the speaker on 12 October 2026 and cite the official source. | Uses a search where available; provides verifiable evidence or acknowledges that it cannot confirm the speaker. |
+| What is the private WhatsApp group link? | Does not invent an invitation or claim access to private information. |
 
-**Refinement exercise:** Change one instruction, such as requesting shorter answers. Rerun the script, record the new version, and repeat the same questions. Compare accuracy, source use, and response style.
-
-## Optional: publish your work to GitHub
-
-Review the files before committing:
-
-```bash
-git status
-git check-ignore .env
-```
-
-Confirm that `.env` is ignored and no credentials or private information are staged. Then:
-
-```bash
-git add README.md agent_foundry.py cleanup.py requirements.txt .env.example .gitignore data/Knowledge_txt.txt LICENSE
-git commit -m "Add MMAUG bootcamp assistant lab"
-git push origin main
-```
-
-Adjust the branch name if your repository does not use `main`. If `.env` is already tracked, adding it to `.gitignore` will not untrack it; remove it from tracking and rotate any exposed credentials.
+**Refinement exercise:** Change one instruction, such as the preferred answer length. Rerun `agent.py`, then restart `chat.py` and compare responses to the same questions. Record the agent version and any factual or source-use failures.
 
 ## Troubleshooting
 
-| Problem | What to check |
-|---|---|
-| Authentication fails | Run `az login`; confirm the account, tenant, and selected subscription. |
-| `401` or `403` | Check authentication and Foundry role assignments. An administrator may need to assign permissions; allow time for changes to propagate. |
-| Missing environment variable | Confirm `.env` exists in the expected location and contains all three keys. |
-| Endpoint or `404` error | Check the resource/project names and use the project endpoint for `AIProjectClient`. |
-| Model not found | Match `MODEL_DEPLOYMENT` exactly to the deployment name. |
-| Import error | Confirm VS Code uses `.venv` and the installed SDK matches the repository's versioned-agent code. Avoid mixing 1.x and 2.x examples. |
-| Web Search unavailable | Check model/region support, project policy, tool configuration, and the current Web Search documentation. |
-| Knowledge file not found | Run from the repository root and check the filename, path, and letter case. |
-| Outdated web answer | Inspect the source and publication date; compare with the official programme page. |
-| Activation blocked on Windows | Use `.venv\Scripts\python.exe` directly as shown above. |
+| Problem | Fix |
+| --- | --- |
+| `ModuleNotFoundError: No module named 'azure'` | Check `sys.executable`, activate `myenv`, and install dependencies with that Python. |
+| `KeyError: 'AZURE_AI_FOUNDRY_PROJECT_ENDPOINT'` | Save `.env` in the project folder with the exact keys from step 6 and populated values. |
+| VS Code says terminal environment injection is disabled | The scripts already use `load_dotenv()`. Check the file and variable names instead of assuming this warning caused a failure. |
+| PowerShell says scripts are disabled | Follow step 3 or use `myenv\Scripts\python.exe` directly. |
+| Anaconda appears in the traceback | The wrong Python is running. Select `myenv`, open a fresh activated terminal and verify its executable. |
+| `Decompressor.decompress()` rejects `output_buffer_limit` | This lab encountered a dependency mismatch in Anaconda. Run from `myenv` first; if it persists there, update the SDK and its compression dependencies in that environment and check their compatibility. |
+| Agent-name validation error | Use a name such as `mmaug-bootcamp-agent` with no spaces or underscores and no more than 63 characters. |
+| `404 DeploymentNotFound` | Match the model deployment name exactly in `.env`, verify it belongs to the project's backing resource, then rerun `agent.py` and restart `chat.py`. |
+| Agent not found during chat | Run `agent.py` first and ensure both scripts use the same endpoint and agent name. |
+| Authentication or MFA fails | Repeat interactive Azure sign-in for the correct tenant as in step 5. |
+| `401` or `403` | Check the signed-in identity and project permissions; allow time for role changes to take effect. |
+| Knowledge file not found | Run `agent.py` from the repository root and check `data/Knowledge_txt.txt`, including letter case. |
+| Web Search unavailable or unused | Check tool configuration, model/region support and project policy; inspect the actual tool call. |
+| Chat exits immediately without a prompt | Save `chat.py` and confirm it contains the supplied interactive loop. |
+| PowerShell says `what` is not recognised | Start `python chat.py` and enter questions at the assistant's prompt. |
 
-## Cleanup and cost control
+## Cleanup and costs
 
-Stopping the Python script ends the local session; it does not delete Azure resources. Complete the following steps when you finish.
+### Stop the chat
 
-### 1. Stop the chat and remove the lab agent
+Type `quit` or `exit`, or press `Ctrl+C`. This stops the local process. It does not delete the agent, model deployment, Azure resources or stored conversation.
 
-Exit the chat or press `Ctrl+C`, then run:
+### Keep the agent for another demonstration
 
-```bash
-python cleanup.py
+The prompt-agent definition itself has no additional creation or running fee. For the base GPT-4.1 **Global Standard** deployment used here, model billing is based on input and output tokens; leaving it idle does not create an idle model-deployment charge. Web Search calls incur separate usage charges.
+
+This does not mean the whole resource group is cost-free. Provisioned model capacity is billed while deployed, and separately provisioned services such as search or storage can have their own costs. Check [Agent Service pricing](https://azure.microsoft.com/en-us/pricing/details/foundry-agent-service/), [Azure OpenAI pricing](https://azure.microsoft.com/en-us/pricing/details/azure-openai/) and [deployment types](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/deployment-types).
+
+### Delete the agent when finished
+
+For this lab, manual cleanup is sufficient:
+
+1. Open the correct project in Foundry.
+2. Open **Agents** and select `mmaug-bootcamp-agent`, or your configured name.
+3. Delete the intended lab agent and verify its removal.
+
+SDK cleanup is an optional alternative. If you create `cleanup.py`, use the same environment-variable names as the working scripts. The deletion call is:
+
+```python
+project.agents.delete(
+    agent_name=os.environ["AZURE_AI_FOUNDRY_AGENT_NAME"]
+)
 ```
 
-Confirm the configured project and agent name before running cleanup. Verify in Foundry that the intended agent and versions were removed. If the script fails or leaves versions behind, remove the lab agent through the portal.
+Here, `project` must be an authenticated `AIProjectClient` configured with `AZURE_AI_FOUNDRY_PROJECT_ENDPOINT`, as in the other scripts. You only need one deletion method. Deleting the agent does not delete its model deployment or perform full Azure-resource cleanup.
 
-### 2. Remove deployments created only for this lab
+### Remove dedicated cloud resources
 
-In the Foundry model deployment area, delete any deployment you created solely for the exercise. Check its deployment name and whether anyone else uses it before deleting it.
+- Delete model deployments created only for this lab if you no longer need them.
+- Check for lab-only connected resources and remove those too.
+- If the whole resource group is dedicated to this lab, inspect its contents and delete it in the [Azure portal](https://portal.azure.com/). Do not delete a shared group.
+- Review **Azure Cost Management + Billing** afterwards. Previously incurred charges remain, and usage reporting can be delayed.
 
-Deleting an agent does not automatically delete its underlying model deployment or other Azure resources.
+For a dedicated lab group, the CLI alternative is:
 
-### 3. Delete dedicated lab resources
-
-If the entire resource group was created only for this lab, first inspect its contents in Azure. Then delete it through the portal or run:
-
-```bash
-az group delete --name "<your-lab-resource-group>"
+```powershell
+az group delete --name "YOUR-LAB-RESOURCE-GROUP"
 ```
 
-The CLI asks for confirmation. Deleting the group removes all resources inside it. Do not delete a shared resource group.
+Confirm the group name before accepting the CLI's deletion prompt. Resource-group deletion removes all resources inside it.
 
-### 4. Verify costs and deletion
+### Clean up locally
 
-- Confirm the intended resources have been deleted, including any lab-only connected resources.
-- Review **Azure Cost Management + Billing** for your subscription.
-- Recheck after usage data has appeared; reporting can be delayed and previously incurred charges remain payable.
+If the environment is active:
 
-### 5. Clean up locally
-
-If you activated the environment, run:
-
-```bash
+```powershell
 deactivate
 ```
 
-Remove `.venv` and the local `.env` if you no longer need them. Local deletion does not remove cloud resources.
+Delete `myenv` and the local `.env` only if you no longer need them. Local deletion does not remove cloud resources.
 
-## Security and limitations
+## Publish updates to GitHub
 
-- Use public programme information only and keep credentials out of Git.
-- The knowledge file is a snapshot dated **29 September 2026**, not a live website connection.
-- The snapshot does not confirm daily speakers, times, meeting or recording links, full certificate eligibility rules, or private group invitations.
-- Web Search results depend on indexed content and may be incomplete or outdated.
-- Embedding knowledge in instructions suits a small demonstration. For larger document collections, consider File Search and evaluate retrieval quality.
-- Source rules reduce guessing but do not guarantee correct answers; use the test cases to evaluate behaviour.
-- MMAUG is an independent community group. This is a community learning demo, not an official Microsoft product.
+Save the files, open VS Code Source Control, review changes, stage the intended files, commit them, and select **Push** or **Sync Changes** for the configured repository.
+
+Include the scripts, public knowledge file, README, `.gitignore`, and the learner templates. Exclude `.env` and `myenv/`. `.gitignore` does not untrack a file that was already committed; check the files and history on GitHub if local configuration was previously added.
+
+## Limitations and next steps
+
+- The snapshot is dated **29 September 2026**. It does not confirm daily speakers, times, meeting links or full certificate eligibility rules.
+- Web Search can return incomplete or outdated information. Preferring `mmaug.com` in instructions is not a technical domain restriction.
+- Source instructions guide behaviour but do not guarantee correctness.
+- The console client has no custom retry handling and does not resume saved conversations after restarting.
+- This lab creates a prompt agent and a local client; it does not publish a public chat website.
+- For a larger document collection, explore File Search and evaluate retrieval quality.
+- Use public programme information only. MMAUG is a community group; this demo is not an official Microsoft product.
 
 For current programme information, visit [mmaug.com/bootcamp](https://mmaug.com/bootcamp).
-
-## Next steps
-
-- Add File Search for a larger, maintained document collection.
-- Evaluate more questions and record failures before expanding the agent's capabilities.
-- Explore domain filtering for web results where supported.
-- Add a GitHub Actions workflow for code checks.
-- Explore a separate client application or the hosted-agent development route.
 
 ## Resources
 
 - [MMAUG Bootcamp](https://mmaug.com/bootcamp)
-- [MMAUG curriculum repository](https://github.com/MMAUG-ORG/mmaug-bootcamp-2026)
-- [Microsoft Foundry documentation](https://learn.microsoft.com/azure/ai-foundry/)
-- [Create a prompt agent: SDK setup and versioning](https://learn.microsoft.com/en-us/azure/foundry/agents/quickstarts/prompt-agent)
-- [Agent runtime components](https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/runtime-components)
+- [Microsoft Foundry documentation](https://learn.microsoft.com/en-us/azure/foundry/)
+- [Create a prompt agent and use conversation history](https://learn.microsoft.com/en-us/azure/foundry/agents/quickstarts/prompt-agent)
+- [AIProjectClient and named-agent clients](https://learn.microsoft.com/en-us/python/api/azure-ai-projects/azure.ai.projects.aiprojectclient?view=azure-python)
 - [Web Search tool](https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/tools/web-search)
-- [Foundry permissions and role assignments](https://learn.microsoft.com/en-us/azure/foundry/concepts/rbac-foundry)
-- [Azure pricing](https://azure.microsoft.com/pricing/)
+- [Foundry permissions](https://learn.microsoft.com/en-us/azure/foundry/concepts/rbac-foundry)
+- [Python environments in VS Code](https://code.visualstudio.com/docs/python/environments)
+- [Azure CLI interactive sign-in](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli-interactively)
+- [PowerShell execution policies](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_execution_policies)
+- [Agent Service pricing](https://azure.microsoft.com/en-us/pricing/details/foundry-agent-service/)
+- [Azure OpenAI pricing](https://azure.microsoft.com/en-us/pricing/details/azure-openai/)
 
 ## Licence
 
-MIT — see [LICENSE](LICENSE).
+MIT — see the repository's [LICENSE](LICENSE).
